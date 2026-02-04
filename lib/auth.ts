@@ -75,7 +75,7 @@ export const auth = betterAuth({
     "https://hotel-demo-murex.vercel.app",
     "http://localhost:3000",
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`, `https://www.${process.env.VERCEL_URL}`] : []),
-  ].filter(Boolean),
+  ].filter((x): x is string => typeof x === "string"),
 
   plugins: [
     twoFactor({
