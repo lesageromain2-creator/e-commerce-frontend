@@ -31,6 +31,26 @@ const removeToken = () => {
   console.log('🗑️ Token supprimé');
 };
 
+/**
+ * Échange session Better Auth (Google, etc.) → JWT backend.
+ * Appelé explicitement quand l'utilisateur est connecté via Better Auth
+ * pour garantir un JWT avant les appels API.
+ * @returns {Promise<boolean>} true si token obtenu, false sinon
+ */
+export const ensureBackendToken = async () => {
+  if (typeof window === 'undefined') return false;
+  if (getToken()) return true;
+  try {
+    const r = await fetch(`${window.location.origin}/api/backend-token`, { credentials: 'include' });
+    const data = await r.json();
+    if (data?.token) {
+      setToken(data.token);
+      return true;
+    }
+  } catch (_) {}
+  return false;
+};
+
 // ============================================
 // FONCTION FETCH API (AMÉLIORÉE)
 // ============================================
@@ -182,10 +202,13 @@ export const logout = async () => {
 };
 
 export const checkAuth = async () => {
-  const token = getToken();
-  
+  let token = getToken();
+  // Better Auth (Google) : obtenir JWT via backend-token si pas de token
+  if (!token && typeof window !== 'undefined') {
+    await ensureBackendToken();
+    token = getToken();
+  }
   if (!token) {
-    console.log('❌ Pas de token - Non authentifié');
     return { 
       authenticated: false,
       user: null 

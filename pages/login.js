@@ -86,7 +86,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrors([]);
-    setSuccessMessage(''); // 🔥 Réinitialiser le message de succès
+    setSuccessMessage('');
 
     const validationErrors = validateForm();
     if (validationErrors.length > 0) {
@@ -96,41 +96,48 @@ export default function Login() {
     }
 
     setLoading(true);
+    const redirectUrl = redirect || '/dashboard';
 
     try {
+      // 1. Essayer Better Auth (email/password + 2FA si activé)
+      const { data, error } = await authClient.signIn.email({
+        email: formData.email.trim(),
+        password: formData.password,
+        rememberMe,
+        callbackURL: typeof window !== 'undefined' ? `${window.location.origin}${redirectUrl}` : redirectUrl,
+      });
+
+      if (!error && data) {
+        const { ensureBackendToken } = await import('../utils/api');
+        await ensureBackendToken();
+        await router.replace(redirectUrl);
+        return;
+      }
+
+      if (error?.status === 403 && error?.message?.toLowerCase().includes('verify')) {
+        setErrors(['Veuillez vérifier votre adresse email avant de vous connecter. Consultez votre boîte de réception.']);
+        setLoading(false);
+        triggerShake();
+        return;
+      }
+
+      // 2. Fallback : backend JWT (utilisateurs existants)
       const loginResponse = await login({
         email: formData.email,
         password: formData.password
       });
 
-      console.log('✅ Login response:', loginResponse);
+      let dest = redirect;
+      if (!dest) dest = loginResponse.user?.role === 'admin' ? '/admin' : '/dashboard';
+      await router.replace(dest);
 
-      // Rediriger les admins vers /admin, les autres vers /dashboard
-      let redirectUrl = redirect;
-      if (!redirectUrl) {
-        // Vérifier le rôle depuis la réponse de login
-        if (loginResponse.user?.role === 'admin') {
-          redirectUrl = '/admin';
-        } else {
-          redirectUrl = '/dashboard';
-        }
-      }
-      
-      console.log('🔄 Redirection vers:', redirectUrl);
-      
-      // Utiliser replace pour éviter de revenir sur login avec le bouton retour
-      await router.replace(redirectUrl);
-      
     } catch (error) {
       const errorMessage = error.message || 'Email ou mot de passe incorrect';
-      
-      // Message plus clair si le backend n'est pas accessible
       if (errorMessage.includes('Serveur inaccessible') || errorMessage.includes('fetch')) {
         setErrors(['Le serveur est actuellement inaccessible. Veuillez réessayer plus tard.']);
       } else {
         setErrors([errorMessage]);
       }
-      
       setLoading(false);
       triggerShake();
     }

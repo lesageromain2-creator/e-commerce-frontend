@@ -93,8 +93,8 @@ export default function Header({ settings = {} }) {
         scrolled ? 'bg-[#FAFAF8]/95 backdrop-blur-md shadow-lg py-4' : 'bg-transparent py-6'
       }`}
     >
-      <div className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-2 px-4 md:px-6 lg:px-8">
-        <Link href="/" className="-ml-4 mr-8 flex shrink-0 items-center gap-3 md:gap-4 md:-ml-6 md:mr-10 lg:-ml-8 lg:mr-12">
+      <div className="flex w-full min-w-0 items-center justify-between gap-2 pl-3 pr-6 md:pl-4 md:pr-8 lg:pl-6 lg:pr-10">
+        <Link href="/" className="-ml-1 flex shrink-0 items-center gap-3 md:gap-4 lg:min-w-[140px]">
           <div
             className={`flex h-10 w-10 min-h-[2.5rem] min-w-[2.5rem] shrink-0 items-center justify-center rounded-full font-heading text-xl font-bold transition-colors duration-300 ${
               scrolled ? 'bg-[#1A1A1A] text-[#C9A96E]' : 'bg-[#C9A96E] text-[#1A1A1A]'
@@ -120,45 +120,59 @@ export default function Header({ settings = {} }) {
           </div>
         </Link>
 
-        <nav className="hidden shrink-0 items-center gap-4 xl:gap-6 font-accent text-xs lg:text-sm font-medium uppercase tracking-[0.08em] lg:flex">
+        <nav className="hidden flex-1 justify-center items-center gap-4 xl:gap-6 font-accent text-xs lg:text-sm font-medium uppercase tracking-[0.08em] lg:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={`transition-colors duration-300 ${
+              className={`shrink-0 transition-colors duration-300 ${
                 isActive(item.href) ? activeClass : navClass
               }`}
             >
               {item.label}
             </Link>
           ))}
+        </nav>
+
+        <div className="hidden shrink-0 items-center gap-2 lg:flex lg:min-w-[180px] lg:justify-end">
           <Link
             href="/reservation-chambre"
-            className="shrink-0 rounded-full bg-[#C9A96E] px-4 py-2 text-sm font-semibold text-[#1A1A1A] transition-all duration-300 hover:bg-[#A68A5C] hover:-translate-y-0.5"
+            className="rounded-full bg-[#C9A96E] px-4 py-2 text-sm font-semibold text-[#1A1A1A] transition-all duration-300 hover:bg-[#A68A5C] hover:-translate-y-0.5"
           >
             Réserver
           </Link>
-          <div className="flex shrink-0 items-center gap-1.5">
             {isLoggedIn ? (
               <>
                 {userRole === 'admin' && (
                   <Link
                     href="/admin"
-                    className="shrink-0 rounded-full border border-[#6B2C3E]/50 bg-[#6B2C3E]/10 px-2.5 py-1 text-[10px] font-semibold text-[#6B2C3E]"
+                    className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                      scrolled
+                        ? 'border-[#6B2C3E]/50 bg-[#6B2C3E]/10 text-[#6B2C3E] hover:bg-[#6B2C3E]/20'
+                        : 'border-white/40 bg-white/5 text-white hover:bg-white/10'
+                    }`}
                   >
                     Admin
                   </Link>
                 )}
                 <Link
                   href="/dashboard"
-                  className="shrink-0 rounded-full border border-[#1A1A1A]/20 bg-[#1A1A1A]/5 px-2.5 py-1 text-[10px] font-semibold text-[#1A1A1A] hover:bg-[#1A1A1A]/10"
+                  className={`shrink-0 rounded-full border px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                    scrolled
+                      ? 'border-[#1A1A1A]/20 bg-[#1A1A1A]/5 text-[#1A1A1A] hover:bg-[#1A1A1A]/10'
+                      : 'border-white/40 bg-white/5 text-white hover:bg-white/10'
+                  }`}
                 >
                   Mon compte
                 </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="shrink-0 rounded-full bg-[#1A1A1A]/20 px-2.5 py-1 text-[10px] font-semibold hover:bg-[#1A1A1A]/30"
+                  className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors ${
+                    scrolled
+                      ? 'bg-[#1A1A1A]/20 text-[#1A1A1A] hover:bg-[#1A1A1A]/30'
+                      : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
                 >
                   Déconnexion
                 </button>
@@ -175,10 +189,9 @@ export default function Header({ settings = {} }) {
                 Connexion
               </Link>
             )}
-          </div>
-        </nav>
+        </div>
 
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-3 lg:hidden">
           <Link
             href="/reservation-chambre"
             className="rounded-full bg-[#C9A96E] px-4 py-2 text-sm font-semibold text-[#1A1A1A]"

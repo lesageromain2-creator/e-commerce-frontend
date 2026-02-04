@@ -101,8 +101,8 @@ export default function Register() {
 
     if (!formData.password) {
       newErrors.push('Le mot de passe est requis');
-    } else if (formData.password.length < 6) {
-      newErrors.push('Le mot de passe doit contenir au moins 6 caractères');
+    } else if (formData.password.length < 8) {
+      newErrors.push('Le mot de passe doit contenir au moins 8 caractères');
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -133,19 +133,34 @@ export default function Register() {
     }
 
     setLoading(true);
+    const name = `${formData.firstname.trim()} ${formData.lastname.trim()}`.trim();
+    const callbackURL = typeof window !== 'undefined' ? `${window.location.origin}${typeof router.query.redirect === 'string' ? router.query.redirect : '/dashboard'}` : '/dashboard';
 
     try {
-      console.log('📝 Tentative d\'inscription...');
-      
-      await register({
-        firstname: formData.firstname,
-        lastname: formData.lastname,
-        email: formData.email,
-        password: formData.password
+      const { data, error } = await authClient.signUp.email({
+        name: name || formData.email.split('@')[0],
+        email: formData.email.trim(),
+        password: formData.password,
+        callbackURL,
       });
 
-      console.log('✅ Inscription réussie, redirection...');
-      router.push(typeof router.query.redirect === 'string' ? router.query.redirect : '/dashboard');
+      if (error) {
+        const msg = error.message || "Une erreur est survenue lors de l'inscription";
+        if (msg.toLowerCase().includes('exist') || msg.toLowerCase().includes('already')) {
+          setErrors(['Un compte existe déjà avec cet email. Connectez-vous ou utilisez « Mot de passe oublié ».']);
+        } else {
+          setErrors([msg]);
+        }
+        setLoading(false);
+        triggerShake();
+        return;
+      }
+
+      if (data) {
+        const { ensureBackendToken } = await import('../utils/api');
+        await ensureBackendToken();
+        router.push(typeof router.query.redirect === 'string' ? router.query.redirect : '/dashboard');
+      }
     } catch (error) {
       console.error('❌ Erreur inscription:', error);
       setErrors([error.message || "Une erreur est survenue lors de l'inscription"]);

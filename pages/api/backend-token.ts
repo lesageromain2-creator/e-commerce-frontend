@@ -21,16 +21,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const headers = new Headers();
-    if (req.headers) {
-      for (const [key, value] of Object.entries(req.headers)) {
-        if (value !== undefined && value !== "") {
-          headers.set(key, Array.isArray(value) ? value[0] : value);
-        }
-      }
-    }
+    // Better Auth getSession nécessite une Request ou des headers avec les cookies
+    const proto = (req.headers["x-forwarded-proto"] as string) || "http";
+    const host = req.headers.host || "localhost:3000";
+    const path = (req as any).url || "/api/backend-token";
+    const url = `${proto}://${host}${path}`;
+    const request = new Request(url, {
+      method: "GET",
+      headers: req.headers as HeadersInit,
+    });
     const session = await auth.api.getSession({
-      headers,
+      request,
     });
 
     if (!session?.user) {

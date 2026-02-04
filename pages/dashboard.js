@@ -49,6 +49,7 @@ import {
   sendChatMessage,
   createChatConversation,
   markChatAsRead,
+  ensureBackendToken,
 } from '../utils/api';
 import { authClient } from '../lib/auth-client';
 import { toast } from 'react-toastify';
@@ -129,6 +130,8 @@ export default function Dashboard() {
           avatar_url: u.image || null,
           role: 'client',
         });
+        // Obtenir un JWT backend pour les API (réservations, chat, etc.)
+        await ensureBackendToken();
         const settingsData = await fetchSettings().catch(() => ({}));
         setSettings(settingsData);
         try {
@@ -394,18 +397,18 @@ export default function Dashboard() {
                 <h1 className="font-heading text-2xl md:text-3xl text-[#FAFAF8]">
                   {getGreeting()}, {user?.firstname}
                 </h1>
-                <p className="text-[#8B8680] mt-1">Bienvenue dans votre espace client</p>
+                <p className="text-[#8B8680] mt-0.5 text-sm">Bienvenue dans votre espace client</p>
               </div>
               <div className="header-actions">
                 <button
                   className="btn-express"
                   onClick={() => { setActiveTab('chats'); }}
                 >
-                  <Sparkles size={18} />
-                  Demande express
+                  <Sparkles size={14} />
+                  Concierge
                 </button>
                 <Link href="/reservation-chambre" className="btn-primary-dash">
-                  <Bed size={18} />
+                  <Bed size={14} />
                   Réserver
                 </Link>
               </div>
@@ -420,7 +423,7 @@ export default function Dashboard() {
                     <div className="hero-overlay" />
                     <div className="hero-content">
                       <p className="hero-tagline">{siteName}</p>
-                      <h2 className="font-heading text-3xl md:text-4xl text-white">
+                      <h2 className="font-heading text-2xl md:text-3xl text-white">
                         Votre séjour, notre priorité
                       </h2>
                     </div>
@@ -446,53 +449,39 @@ export default function Dashboard() {
                       className="btn-detail"
                       onClick={() => { setActiveTab('reservations'); setExpandedReservationId(nextStay.id); }}
                     >
-                      Voir les détails <ChevronRight size={18} />
+                      Détails <ChevronRight size={16} />
                     </button>
                   </AnimeReveal>
                 )}
 
-                <div className="stats-grid">
-                  <AnimeReveal options={{ delay: 150 }} className="stat-card" onClick={() => setActiveTab('reservations')}>
-                    <div className="stat-icon gold"><Bed size={24} /></div>
-                    <div>
-                      <span className="stat-value">{activeReservations.length}</span>
-                      <span className="stat-label">Réservations actives</span>
-                    </div>
-                  </AnimeReveal>
-                  <AnimeReveal options={{ delay: 200 }} className="stat-card" onClick={() => setActiveTab('invoices')}>
-                    <div className="stat-icon taupe"><CreditCard size={24} /></div>
-                    <div>
-                      <span className="stat-value">—</span>
-                      <span className="stat-label">Factures</span>
-                    </div>
-                  </AnimeReveal>
-                  <AnimeReveal options={{ delay: 250 }} className="stat-card" onClick={() => setActiveTab('chats')}>
-                    <div className="stat-icon burgundy"><MessageCircle size={24} /></div>
-                    <div>
-                      <span className="stat-value">Concierge</span>
-                      <span className="stat-label">24/7</span>
-                    </div>
-                  </AnimeReveal>
-                </div>
-
-                <AnimeReveal options={{ delay: 300 }} className="section-card">
-                  <h3 className="font-heading text-xl text-[#FAFAF8] mb-4">Actions rapides</h3>
-                  <div className="quick-actions">
-                    <Link href="/reservation-chambre" className="action-btn">
-                      <Bed size={24} />
-                      <span>Réserver une chambre</span>
-                    </Link>
-                    <button className="action-btn" onClick={() => setActiveTab('chats')}>
-                      <MessageCircle size={24} />
-                      <span>Contacter le concierge</span>
+                <AnimeReveal options={{ delay: 150 }} className="overview-compact">
+                  <div className="stats-row">
+                    <button className="stat-pill" onClick={() => setActiveTab('reservations')}>
+                      <Bed size={18} />
+                      <span className="stat-pill-value">{activeReservations.length}</span>
+                      <span className="stat-pill-label">Réservations</span>
                     </button>
-                    <Link href="/restauration" className="action-btn">
-                      <UtensilsCrossed size={24} />
-                      <span>Restauration</span>
+                    <button className="stat-pill" onClick={() => setActiveTab('invoices')}>
+                      <CreditCard size={18} />
+                      <span className="stat-pill-value">Factures</span>
+                    </button>
+                    <button className="stat-pill" onClick={() => setActiveTab('chats')}>
+                      <MessageCircle size={18} />
+                      <span className="stat-pill-value">Concierge</span>
+                    </button>
+                  </div>
+                  <div className="quick-links">
+                    <Link href="/reservation-chambre" className="quick-link">
+                      <Bed size={14} /> Réserver
                     </Link>
-                    <Link href="/bien-etre" className="action-btn">
-                      <Heart size={24} />
-                      <span>Spa & Bien-être</span>
+                    <button type="button" className="quick-link" onClick={() => setActiveTab('chats')}>
+                      <MessageCircle size={14} /> Concierge
+                    </button>
+                    <Link href="/restauration" className="quick-link">
+                      <UtensilsCrossed size={14} /> Restauration
+                    </Link>
+                    <Link href="/bien-etre" className="quick-link">
+                      <Heart size={14} /> Spa
                     </Link>
                   </div>
                 </AnimeReveal>
@@ -736,6 +725,22 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <p className="text-[#8B8680] text-sm mt-4">Modification du profil – bientôt disponible</p>
+
+                  {/* Sécurité - 2FA */}
+                  <div className="profile-2fa mt-6 pt-6 border-t border-white/10">
+                    <h3 className="font-heading text-lg text-[#FAFAF8] mb-2 flex items-center gap-2">
+                      <Shield size={20} className="text-[#C9A96E]" />
+                      Sécurité
+                    </h3>
+                    <p className="text-[#8B8680] text-sm mb-3">Authentification à deux facteurs (2FA) par application (Google Authenticator, Authy, etc.)</p>
+                    <Link
+                      href="/auth/enable-2fa"
+                      className="inline-flex items-center gap-2 rounded-full border border-[#C9A96E]/40 bg-[#C9A96E]/10 px-4 py-2 text-sm font-medium text-[#C9A96E] hover:bg-[#C9A96E]/20 transition-colors"
+                    >
+                      <Shield size={16} />
+                      Activer la 2FA
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
@@ -871,47 +876,47 @@ export default function Dashboard() {
           align-items: flex-start;
           flex-wrap: wrap;
           gap: 1rem;
-          margin-bottom: 2rem;
+          margin-bottom: 1.5rem;
         }
         .header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
         .btn-express {
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.25rem;
+          gap: 0.35rem;
+          padding: 0.45rem 0.9rem;
           background: transparent;
-          border: 2px solid #C9A96E;
+          border: 1px solid rgba(201,169,110,0.5);
           border-radius: 9999px;
           color: #C9A96E;
-          font-weight: 600;
-          font-size: 0.9rem;
+          font-weight: 500;
+          font-size: 0.8rem;
           cursor: pointer;
           transition: all 0.2s;
         }
-        .btn-express:hover { background: rgba(201,169,110,0.15); }
+        .btn-express:hover { background: rgba(201,169,110,0.1); border-color: #C9A96E; }
         .btn-primary-dash {
           display: inline-flex;
           align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1.5rem;
+          gap: 0.35rem;
+          padding: 0.45rem 0.9rem;
           background: #C9A96E;
           border-radius: 9999px;
           color: #1A1A1A;
           font-weight: 600;
-          font-size: 0.9rem;
+          font-size: 0.8rem;
           text-decoration: none;
           transition: all 0.2s;
         }
         .btn-primary-dash:hover { background: #D4BC8E; transform: translateY(-1px); }
 
-        .content-section { display: flex; flex-direction: column; gap: 1.5rem; }
+        .content-section { display: flex; flex-direction: column; gap: 1.25rem; }
         .hero-immersive { margin-bottom: 0.5rem; }
         .hero-image-wrap {
           position: relative;
-          height: 240px;
-          border-radius: 1.25rem;
+          height: 200px;
+          border-radius: 1rem;
           overflow: hidden;
-          box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+          box-shadow: 0 16px 40px rgba(0,0,0,0.35);
         }
         .hero-overlay {
           position: absolute;
@@ -924,20 +929,20 @@ export default function Dashboard() {
           bottom: 0;
           left: 0;
           right: 0;
-          padding: 2rem;
+          padding: 1.5rem;
           z-index: 2;
         }
-        .hero-tagline { color: #C9A96E; font-size: 0.9rem; margin-bottom: 0.25rem; }
+        .hero-tagline { color: #C9A96E; font-size: 0.8rem; margin-bottom: 0.2rem; }
         .countdown-card {
           display: flex;
           align-items: center;
           justify-content: space-between;
           flex-wrap: wrap;
-          gap: 1rem;
-          padding: 1.5rem;
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(201,169,110,0.2);
-          border-radius: 1rem;
+          gap: 0.75rem;
+          padding: 1rem 1.25rem;
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(201,169,110,0.15);
+          border-radius: 0.75rem;
         }
         .countdown-label { color: #8B8680; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em; }
         .countdown-badge {
@@ -962,6 +967,59 @@ export default function Dashboard() {
           border: none;
         }
         .btn-detail:hover { text-decoration: underline; }
+
+        .overview-compact { display: flex; flex-direction: column; gap: 1.25rem; }
+        .stats-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+        .stat-pill {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.65rem 1.1rem;
+          background: rgba(255,255,255,0.02);
+          border: 1px solid rgba(255,255,255,0.06);
+          border-radius: 0.75rem;
+          color: #FAFAF8;
+          font-size: 0.85rem;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .stat-pill:hover {
+          border-color: rgba(201,169,110,0.25);
+          background: rgba(201,169,110,0.05);
+        }
+        .stat-pill svg { color: #C9A96E; flex-shrink: 0; }
+        .stat-pill-value { font-weight: 600; }
+        .stat-pill-label { color: #8B8680; font-size: 0.75rem; margin-left: 0.25rem; }
+        .quick-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+        }
+        .quick-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.5rem 0.9rem;
+          background: transparent;
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 0.5rem;
+          color: rgba(250,250,248,0.85);
+          font-size: 0.78rem;
+          font-weight: 500;
+          text-decoration: none;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+        .quick-link:hover {
+          border-color: rgba(201,169,110,0.3);
+          color: #C9A96E;
+          background: rgba(201,169,110,0.05);
+        }
+        .quick-link svg { opacity: 0.8; }
 
         .stats-grid {
           display: grid;

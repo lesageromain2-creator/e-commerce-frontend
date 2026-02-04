@@ -1,19 +1,22 @@
 /**
- * Configuration Better Auth - LE SAGE DEV
+ * Configuration Better Auth - Hôtel
  * Authentification : Email/Password + OAuth (Google) + 2FA
- * Adapter : Prisma (supporte better_auth_* dans schema.prisma)
  */
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins";
 import { prisma } from "./prisma";
+import { sendResetPasswordEmail, sendVerificationEmail } from "./sendAuthEmail";
 
-// Production : BETTER_AUTH_URL obligatoire (ex: https://lesagedev.com). Sinon VERCEL_URL en secours.
+// En production Vercel : BETTER_AUTH_URL doit être l'URL exacte du site (ex: https://hotel-demo-murex.vercel.app)
 const baseURL =
   process.env.BETTER_AUTH_URL ||
   process.env.NEXTAUTH_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
+  process.env.NEXT_PUBLIC_APP_URL ||
   "http://localhost:3000";
+
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "Hôtel La Grande Croix";
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
@@ -37,14 +40,20 @@ export const auth = betterAuth({
   basePath: "/api/auth",
   baseURL,
 
-  appName: "LE SAGE DEV",
+  appName,
 
   emailAndPassword: {
     enabled: true,
-    requireEmailVerification: false,
+    requireEmailVerification: process.env.REQUIRE_EMAIL_VERIFICATION === "true",
     minPasswordLength: 8,
     sendResetPassword: async ({ user, url }) => {
-      console.log("Reset password pour:", user.email, "→", url);
+      void sendResetPasswordEmail(user.email, url);
+    },
+  },
+
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url }) => {
+      void sendVerificationEmail(user.email, url);
     },
   },
 
@@ -70,16 +79,16 @@ export const auth = betterAuth({
     baseURL,
     process.env.FRONTEND_URL || "http://localhost:3000",
     process.env.NEXT_PUBLIC_APP_URL,
-    "https://lesagedev.com",
-    "https://www.lesagedev.com",
     "https://hotel-demo-murex.vercel.app",
+    "https://accounts.google.com", // OAuth callback
+    "https://www.googleapis.com",
     "http://localhost:3000",
     ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`, `https://www.${process.env.VERCEL_URL}`] : []),
   ].filter((x): x is string => typeof x === "string"),
 
   plugins: [
     twoFactor({
-      issuer: "LE SAGE DEV",
+      issuer: appName,
       twoFactorTable: "better_auth_two_factor",
     }),
   ],

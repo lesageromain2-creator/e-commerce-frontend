@@ -1,11 +1,13 @@
-// frontend/pages/forgot-password.js
-import { useState } from 'react';
-import { useRouter } from 'next/router';
+// frontend/pages/forgot-password.js - Mot de passe oublié (Better Auth + style hôtel)
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { getApiPrefix } from '../utils/getApiUrl';
-
-const API_URL = getApiPrefix();
+import { useRouter } from 'next/router';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import { authClient } from '../lib/auth-client';
+import { fetchSettings } from '../utils/api';
+import { DEFAULT_HOTEL } from '../lib/hotelConstants';
 
 export default function ForgotPassword() {
   const router = useRouter();
@@ -13,39 +15,42 @@ export default function ForgotPassword() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [settings, setSettings] = useState({ site_name: DEFAULT_HOTEL.name });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    fetchSettings().then(setSettings).catch(() => {});
+    setTimeout(() => setMounted(true), 50);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    // Validation email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      setError('Format d\'email invalide');
+      setError("Format d'email invalide");
       setLoading(false);
       return;
     }
 
     try {
-      const response = await fetch(`${API_URL}/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const { error: err } = await authClient.requestPasswordReset({
+        email: email.trim(),
+        redirectTo: `${origin}/reset-password`,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors de l\'envoi');
+      if (err) {
+        setError(err.message || "Erreur lors de l'envoi");
+        setLoading(false);
+        return;
       }
 
       setSuccess(true);
-
     } catch (err) {
-      setError(err.message);
+      setError(err?.message || "Erreur lors de l'envoi");
     } finally {
       setLoading(false);
     }
@@ -54,248 +59,198 @@ export default function ForgotPassword() {
   return (
     <>
       <Head>
-        <title>Mot de passe oublié - LE SAGE DEV</title>
+        <title>Mot de passe oublié - {settings.site_name || DEFAULT_HOTEL.name}</title>
+        <meta name="description" content="Réinitialisez votre mot de passe" />
       </Head>
 
-      <div className="forgot-container">
-        <div className="forgot-card">
-          <div className="forgot-header">
-            <h1>🔑 Mot de passe oublié ?</h1>
-            <p>Entrez votre email pour recevoir un lien de réinitialisation</p>
-          </div>
+      <Header settings={settings} />
 
-          {success ? (
-            <div className="success-message">
-              <div className="success-icon">✉️</div>
-              <h2>Email envoyé !</h2>
-              <p>Si un compte existe avec cet email, vous recevrez un lien de réinitialisation dans quelques instants.</p>
-              <p className="info-text">Pensez à vérifier vos spams si vous ne voyez rien.</p>
-              <Link href="/login" className="btn-back">← Retour à la connexion</Link>
+      <div className="forgot-page">
+        <div className="forgot-bg">
+          <div className="forgot-orb orb-1"></div>
+          <div className="forgot-orb orb-2"></div>
+          <div className="forgot-orb orb-3"></div>
+        </div>
+
+        <div className={`forgot-container ${mounted ? 'mounted' : ''}`}>
+          <div className="forgot-card">
+            <div className="forgot-header">
+              <div className="forgot-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <p className="forgot-tagline">{settings.site_name || DEFAULT_HOTEL.name}</p>
+              <h1 className="font-heading">Mot de passe oublié ?</h1>
+              <p className="forgot-sub">Entrez votre email pour recevoir un lien de réinitialisation</p>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="forgot-form">
-              {error && (
-                <div className="error-message">
-                  ⚠️ {error}
+
+            {success ? (
+              <div className="forgot-success">
+                <div className="forgot-success-icon">✓</div>
+                <h2>Email envoyé</h2>
+                <p>Si un compte existe avec cet email, vous recevrez un lien de réinitialisation sous peu.</p>
+                <p className="forgot-info">Vérifiez vos spams si nécessaire.</p>
+                <Link href="/login" className="forgot-btn-back">← Retour à la connexion</Link>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="forgot-form">
+                {error && <div className="forgot-error">⚠ {error}</div>}
+                <div className="forgot-group">
+                  <label htmlFor="email">Adresse email</label>
+                  <input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="votre@email.com"
+                    required
+                    disabled={loading}
+                  />
                 </div>
-              )}
-
-              <div className="form-group">
-                <label htmlFor="email">Adresse email</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="votre@email.com"
-                  required
-                  disabled={loading}
-                />
-              </div>
-
-              <button 
-                type="submit" 
-                className="btn-submit"
-                disabled={loading}
-              >
-                {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
-              </button>
-
-              <div className="form-footer">
-                <Link href="/login" className="link-back">← Retour à la connexion</Link>
-              </div>
-            </form>
-          )}
+                <button type="submit" className="forgot-btn" disabled={loading}>
+                  {loading ? 'Envoi en cours...' : 'Envoyer le lien'}
+                </button>
+                <div className="forgot-footer">
+                  <Link href="/login" className="forgot-link">← Retour à la connexion</Link>
+                </div>
+              </form>
+            )}
+          </div>
         </div>
       </div>
 
+      <Footer settings={settings} />
+
       <style jsx>{`
-        .forgot-container {
+        .forgot-page {
           min-height: 100vh;
-          background: linear-gradient(135deg, #0A0E27 0%, #1a1f3a 100%);
+          background: #1A1A1A;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 20px;
+          padding: 100px 20px 60px;
+          position: relative;
         }
-
+        .forgot-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+        .forgot-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.4;
+        }
+        .forgot-orb.orb-1 { width: 400px; height: 400px; background: rgba(201,169,110,0.15); top: 10%; left: 10%; }
+        .forgot-orb.orb-2 { width: 300px; height: 300px; background: rgba(107,44,62,0.1); bottom: 20%; right: 15%; }
+        .forgot-orb.orb-3 { width: 250px; height: 250px; background: rgba(201,169,110,0.08); bottom: 40%; left: 30%; }
+        .forgot-container {
+          position: relative;
+          z-index: 1;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.6s ease;
+        }
+        .forgot-container.mounted { opacity: 1; transform: translateY(0); }
         .forgot-card {
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 16px;
-          padding: 40px;
-          max-width: 500px;
+          background: rgba(250,250,248,0.03);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(201,169,110,0.2);
+          border-radius: 24px;
+          padding: 48px;
+          max-width: 460px;
           width: 100%;
-          backdrop-filter: blur(10px);
         }
-
-        .forgot-header {
-          text-align: center;
-          margin-bottom: 32px;
+        .forgot-header { text-align: center; margin-bottom: 32px; }
+        .forgot-icon {
+          width: 72px; height: 72px;
+          margin: 0 auto 20px;
+          background: linear-gradient(135deg, #C9A96E, #A68A5C);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
-
-        .forgot-header h1 {
-          color: white;
-          font-size: 28px;
-          font-weight: 800;
+        .forgot-icon svg { width: 32px; height: 32px; stroke: #1A1A1A; }
+        .forgot-tagline {
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.2em;
+          color: #C9A96E;
           margin-bottom: 8px;
-          background: linear-gradient(135deg, #00D9FF, #0066FF);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
         }
-
-        .forgot-header p {
-          color: rgba(255, 255, 255, 0.6);
-          font-size: 14px;
+        .forgot-header h1 { font-size: 1.8rem; color: #FAFAF8; margin-bottom: 8px; }
+        .forgot-sub { color: #8B8680; font-size: 0.95rem; }
+        .forgot-form { display: flex; flex-direction: column; gap: 20px; }
+        .forgot-group { display: flex; flex-direction: column; gap: 8px; }
+        .forgot-group label { color: #FAFAF8; font-size: 0.9rem; font-weight: 500; }
+        .forgot-group input {
+          padding: 14px 18px;
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(201,169,110,0.3);
+          border-radius: 12px;
+          color: #FAFAF8;
+          font-size: 1rem;
         }
-
-        .forgot-form {
-          display: flex;
-          flex-direction: column;
-          gap: 20px;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .form-group label {
-          color: white;
-          font-size: 14px;
-          font-weight: 600;
-        }
-
-        .form-group input {
-          padding: 12px 16px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 8px;
-          color: white;
-          font-size: 14px;
-          transition: all 0.3s;
-        }
-
-        .form-group input:focus {
+        .forgot-group input:focus {
           outline: none;
-          border-color: #0066FF;
-          background: rgba(255, 255, 255, 0.08);
+          border-color: #C9A96E;
+          background: rgba(255,255,255,0.08);
         }
-
-        .form-group input:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .form-group input::placeholder {
-          color: rgba(255, 255, 255, 0.4);
-        }
-
-        .btn-submit {
-          padding: 14px 24px;
-          background: linear-gradient(135deg, #0066FF, #00D9FF);
-          color: white;
+        .forgot-group input::placeholder { color: #8B8680; }
+        .forgot-btn {
+          padding: 16px 24px;
+          background: linear-gradient(135deg, #C9A96E, #A68A5C);
+          color: #1A1A1A;
           border: none;
-          border-radius: 8px;
-          font-size: 16px;
+          border-radius: 12px;
+          font-size: 1rem;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.3s;
-          margin-top: 8px;
         }
-
-        .btn-submit:hover:not(:disabled) {
+        .forgot-btn:hover:not(:disabled) {
           transform: translateY(-2px);
-          box-shadow: 0 10px 30px rgba(0, 102, 255, 0.4);
+          box-shadow: 0 8px 24px rgba(201,169,110,0.35);
         }
-
-        .btn-submit:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .error-message {
+        .forgot-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+        .forgot-error {
           padding: 12px 16px;
-          background: rgba(255, 68, 68, 0.1);
-          border: 1px solid rgba(255, 68, 68, 0.3);
-          border-radius: 8px;
-          color: #FF6B6B;
-          font-size: 14px;
+          background: rgba(239,68,68,0.1);
+          border: 1px solid rgba(239,68,68,0.3);
+          border-radius: 10px;
+          color: #f87171;
+          font-size: 0.9rem;
         }
-
-        .success-message {
-          text-align: center;
-          padding: 40px 20px;
+        .forgot-footer { text-align: center; }
+        .forgot-link { color: #8B8680; font-size: 0.9rem; text-decoration: none; }
+        .forgot-link:hover { color: #C9A96E; }
+        .forgot-success { text-align: center; padding: 24px 0; }
+        .forgot-success-icon {
+          width: 64px; height: 64px;
+          margin: 0 auto 20px;
+          background: rgba(52,199,89,0.2);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
+          color: #22c55e;
         }
-
-        .success-icon {
-          font-size: 64px;
-          margin-bottom: 20px;
-        }
-
-        .success-message h2 {
-          color: white;
-          font-size: 24px;
-          font-weight: 700;
-          margin-bottom: 12px;
-        }
-
-        .success-message p {
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 16px;
-          margin-bottom: 8px;
-        }
-
-        .info-text {
-          color: rgba(255, 255, 255, 0.5);
-          font-size: 14px;
-          margin-top: 16px;
-          margin-bottom: 24px;
-        }
-
-        .btn-back {
+        .forgot-success h2 { color: #FAFAF8; font-size: 1.4rem; margin-bottom: 12px; }
+        .forgot-success p { color: #8B8680; font-size: 0.95rem; margin-bottom: 8px; }
+        .forgot-info { font-size: 0.85rem !important; margin-top: 16px !important; }
+        .forgot-btn-back {
           display: inline-block;
+          margin-top: 24px;
           padding: 12px 24px;
-          background: rgba(255, 255, 255, 0.1);
-          color: white;
-          border: 1px solid rgba(255, 255, 255, 0.2);
-          border-radius: 8px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(201,169,110,0.3);
+          border-radius: 10px;
+          color: #FAFAF8;
           text-decoration: none;
-          font-weight: 600;
-          transition: all 0.3s;
+          font-weight: 500;
         }
-
-        .btn-back:hover {
-          background: rgba(255, 255, 255, 0.15);
-          border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        .form-footer {
-          text-align: center;
-          margin-top: 16px;
-        }
-
-        .link-back {
-          color: rgba(255, 255, 255, 0.7);
-          font-size: 14px;
-          text-decoration: none;
-          transition: color 0.3s;
-        }
-
-        .link-back:hover {
-          color: #00D9FF;
-        }
-
-        @media (max-width: 768px) {
-          .forgot-card {
-            padding: 24px;
-          }
-
-          .forgot-header h1 {
-            font-size: 24px;
-          }
-        }
+        .forgot-btn-back:hover { background: rgba(201,169,110,0.2); }
       `}</style>
     </>
   );

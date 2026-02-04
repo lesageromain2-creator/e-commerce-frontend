@@ -48,6 +48,8 @@ export default function Reservation() {
       if (betterAuthSession?.data?.user) {
         const u = betterAuthSession.data.user;
         const nameParts = (u.name || '').trim().split(/\s+/);
+        const { ensureBackendToken } = await import('../utils/api');
+        await ensureBackendToken();
         setUser({
           id: u.id,
           email: u.email,

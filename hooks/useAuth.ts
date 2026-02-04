@@ -8,6 +8,7 @@ import { useRouter } from 'next/router';
 import axiosInstance from '@/lib/axios';
 import { supabase } from '@/lib/supabase';
 import { authClient } from '@/lib/auth-client';
+import { ensureBackendToken } from '@/utils/api';
 import type { 
   AuthState, 
   LoginCredentials, 
@@ -45,7 +46,7 @@ export const useAuthProvider = () => {
 
   // Charger l'utilisateur : JWT (localStorage) OU Better Auth (Google OAuth)
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       try {
         const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
         const userStr = localStorage.getItem('user');
@@ -70,6 +71,8 @@ export const useAuthProvider = () => {
           const nameParts = (baUser.name ?? '').trim().split(/\s+/);
           const first_name = nameParts[0] ?? '';
           const last_name = nameParts.slice(1).join(' ') ?? '';
+          // Obtenir un JWT backend pour les API (réservations, chat, etc.)
+          await ensureBackendToken();
           setState({
             user: {
               id: baUser.id,
@@ -79,7 +82,7 @@ export const useAuthProvider = () => {
               role: 'client',
               is_verified: baUser.emailVerified ?? false,
             },
-            token: 'better-auth',
+            token: localStorage.getItem('authToken') || 'better-auth',
             isAuthenticated: true,
             isLoading: false,
           });
