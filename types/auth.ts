@@ -34,7 +34,7 @@ export interface UserAuth {
   lastname?: string;
   name?: string;
   avatar_url?: string;
-  role: 'admin' | 'client' | 'user';
+  role: 'admin' | 'client' | 'user' | 'dropshipper';
   is_verified?: boolean;
 }
 
