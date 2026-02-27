@@ -310,7 +310,7 @@ export default function DropshipperDashboard() {
                             {order.items_count || 0} article{order.items_count !== 1 ? 's' : ''}
                           </td>
                           <td className="px-6 py-4 text-small font-semibold text-charcoal">
-                            {parseFloat(order.total_amount).toFixed(2)} €
+                            {Number(order.total_amount).toFixed(2)} €
                           </td>
                           <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
                           <td className="px-6 py-4 text-small text-charcoal/70">

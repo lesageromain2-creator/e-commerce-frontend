@@ -45,7 +45,7 @@ const STATUS_COLORS: Record<string, string> = {
 export default function AnalyticsPage() {
   const [revenueByDay, setRevenueByDay] = useState<{ date: string; revenue: number }[]>([]);
   const [ordersByDay, setOrdersByDay] = useState<{ date: string; count: number }[]>([]);
-  const [topProducts, setTopProducts] = useState<{ name: string; units_sold: number; revenue: number }[]>([]);
+  const [topProducts, setTopProducts] = useState<{ name: string; units_sold: number; revenue: number; slug?: string }[]>([]);
   const [ordersByStatus, setOrdersByStatus] = useState<{ status: string; count: string }[]>([]);
   const [totalStats, setTotalStats] = useState<{ monthRevenue: number; monthOrders: number; newCustomers: number }>({
     monthRevenue: 0,
@@ -193,7 +193,10 @@ export default function AnalyticsPage() {
                     <Tooltip
                       contentStyle={{ background: 'rgba(26,26,26,0.95)', border: '1px solid rgba(255,255,255,0.1)' }}
                       labelStyle={{ color: '#fff' }}
-                      formatter={(value: number, name: string) => [name === 'revenue' ? `${value} €` : value, name === 'revenue' ? 'Revenus' : 'Commandes']}
+                      formatter={((value: unknown, name: unknown) => [
+                        name === 'revenue' && typeof value === 'number' ? `${value} €` : (typeof value === 'number' ? value : 0),
+                        name === 'revenue' ? 'Revenus' : 'Commandes',
+                      ]) as any}
                     />
                     <Line yAxisId="left" type="monotone" dataKey="revenue" stroke="#B8986E" strokeWidth={2} dot={false} name="revenue" />
                     <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={2} dot={false} name="orders" />

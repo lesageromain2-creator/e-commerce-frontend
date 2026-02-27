@@ -156,7 +156,7 @@ export default function CheckoutStripePage() {
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = 0; // Calculé par Stripe ou gratuit
+  const shipping: number = 0; // Calculé par Stripe ou gratuit
   const total = subtotal + shipping;
 
   return (

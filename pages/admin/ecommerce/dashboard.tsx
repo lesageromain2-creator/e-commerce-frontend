@@ -292,7 +292,7 @@ export default function EcommerceDashboard() {
                             {order.user_email || order.guest_email || 'N/A'}
                           </td>
                           <td className="px-6 py-4 text-small font-semibold text-white">
-                            {parseFloat(order.total_amount).toFixed(2)} €
+                            {Number(order.total_amount).toFixed(2)} €
                           </td>
                           <td className="px-6 py-4">
                             {getStatusBadge(order.status)}

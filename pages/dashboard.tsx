@@ -28,15 +28,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [mounted, setMounted] = useState(false);
 
   // Données
-  const [orders, setOrders] = useState([]);
-  const [addresses, setAddresses] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [wishlist, setWishlist] = useState<any[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -70,7 +70,7 @@ export default function Dashboard() {
       });
       
       setLoading(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur chargement:', error);
       toast.error('Erreur de chargement');
       if (error.response?.status === 401) {
@@ -105,7 +105,7 @@ export default function Dashboard() {
     router.push('/');
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed':
       case 'delivered':
@@ -120,7 +120,7 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
       case 'delivered':
@@ -135,8 +135,8 @@ export default function Dashboard() {
     }
   };
 
-  const getStatusLabel = (status) => {
-    const labels = {
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
       pending: 'En attente',
       processing: 'En traitement',
       shipped: 'Expédiée',

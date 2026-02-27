@@ -27,13 +27,15 @@ interface CartStore {
   sessionId: string | null;
   isLoading: boolean;
   error: string | null;
-  
+  cart: any | null;
+
   // Actions
   addItem: (item: Omit<CartItem, 'id'>) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeItem: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   syncWithBackend: () => Promise<void>;
+  fetchCart: () => Promise<void>;
   
   // Calculés
   getTotal: () => number;
@@ -54,6 +56,7 @@ export const useCartStore = create<CartStore>()(
       sessionId: null,
       isLoading: false,
       error: null,
+      cart: undefined,
 
       // Ajouter un produit au panier
       addItem: async (newItem) => {
@@ -308,6 +311,11 @@ export const useCartStore = create<CartStore>()(
             });
           }
         }
+      },
+
+      // Alias simple pour compatibilité avec l'ancien code (checkout)
+      fetchCart: async () => {
+        await get().syncWithBackend();
       },
 
       // Calculer le total
