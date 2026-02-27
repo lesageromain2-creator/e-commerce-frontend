@@ -108,7 +108,10 @@ export default function AdminLayout({
       />
       
       <div className="admin-content">
-        <AdminHeader user={user} />
+        <AdminHeader 
+          user={user} 
+          onSearch={() => {}} 
+        />
         
         <main className="admin-main">
           {children}
