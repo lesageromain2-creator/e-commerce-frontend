@@ -102,6 +102,7 @@ export default function AdminLayout({
   return (
     <div className="admin-layout">
       <AdminSidebar 
+        activeSection={undefined}
         notifications={notifications}
         onNavigate={() => setSidebarOpen(false)}
       />
