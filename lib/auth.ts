@@ -1,7 +1,21 @@
 /**
- * Configuration Better Auth - Hôtel
- * Authentification : Email/Password + OAuth (Google) + 2FA
+ * Configuration Better Auth - DÉSACTIVÉ TEMPORAIREMENT
+ * Le projet utilise JWT pour l'authentification backend
+ * Better Auth sera configuré plus tard si nécessaire
  */
+
+// Stub auth pour éviter les erreurs de compilation
+export const auth = {
+  handler: (req: any, res: any) => {
+    res.status(501).json({ error: 'Better Auth not configured' });
+  },
+} as any;
+
+// Exports pour compatibilité
+export const { handler: GET, handler: POST } = auth;
+
+// Configuration commentée - à décommenter quand Prisma sera installé
+/*
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins";
@@ -94,3 +108,4 @@ export const auth = betterAuth({
     }),
   ],
 });
+*/

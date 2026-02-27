@@ -1,4 +1,4 @@
-// frontend/pages/index.js - Homepage Hôtel style Hotel Glasgow Monceau
+// frontend/pages/index-hotel.js - Homepage Hôtel style Hotel Glasgow Monceau (/index-hotel)
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
@@ -29,7 +29,7 @@ import {
 
 const defaultSettings = { site_name: DEFAULT_HOTEL.name };
 
-export default function HomePage() {
+export default function HomePageHotel() {
   const [hotel, setHotel] = useState(null);
   const [heroImage, setHeroImage] = useState('');
   const [offers, setOffers] = useState([]);

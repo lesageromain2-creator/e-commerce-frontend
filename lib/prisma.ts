@@ -1,16 +1,10 @@
 /**
- * Client Prisma pour Better Auth - connexion PostgreSQL (Supabase)
+ * Client Prisma pour Better Auth - DÉSACTIVÉ TEMPORAIREMENT
+ * Le projet utilise JWT pour l'authentification, pas besoin de Prisma pour l'instant
  */
-import { PrismaClient } from "@prisma/client";
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
-
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
-  });
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+// Stub Prisma client pour éviter les erreurs de compilation
+export const prisma = {
+  $connect: async () => {},
+  $disconnect: async () => {},
+} as any;

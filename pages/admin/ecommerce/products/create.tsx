@@ -24,6 +24,7 @@ interface Brand {
 export default function CreateProductPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
 
@@ -47,6 +48,7 @@ export default function CreateProductPage() {
     metaTitle: '',
     metaDescription: '',
     tags: '',
+    featuredImage: '',
   });
 
   useEffect(() => {
@@ -94,6 +96,41 @@ export default function CreateProductPage() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Veuillez sélectionner une image (JPEG, PNG, WebP ou GIF).');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image trop volumineuse (max 5 Mo).');
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const response = await axios.post(`${API_URL}/upload/product-image`, formData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      if (response.data?.success && response.data?.url) {
+        setFormData((prev) => ({ ...prev, featuredImage: response.data.url }));
+        toast.success('Image envoyée.');
+      } else {
+        toast.error(response.data?.message || 'Échec de l\'upload.');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Erreur lors de l\'upload.');
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
@@ -130,8 +167,8 @@ export default function CreateProductPage() {
         allowBackorder: formData.allowBackorder,
         metaTitle: formData.metaTitle || undefined,
         metaDescription: formData.metaDescription || undefined,
-        images: [],
-        featuredImage: undefined,
+        images: formData.featuredImage?.trim() ? [formData.featuredImage.trim()] : [],
+        featuredImage: formData.featuredImage?.trim() || undefined,
       };
 
       const response = await axios.post(`${API_URL}/products`, payload, {
@@ -212,6 +249,48 @@ export default function CreateProductPage() {
                       <p className="text-xs text-gray-500 mt-1">
                         URL: /products/{formData.slug || 'slug-du-produit'}
                       </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Image du produit
+                      </label>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <label className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 text-sm">
+                            <input
+                              type="file"
+                              accept="image/jpeg,image/png,image/webp,image/gif"
+                              onChange={handleImageUpload}
+                              disabled={uploadingImage}
+                              className="sr-only"
+                            />
+                            {uploadingImage ? 'Envoi…' : 'Choisir un fichier'}
+                          </label>
+                          <span className="text-xs text-gray-500">ou coller une URL ci-dessous</span>
+                        </div>
+                        <input
+                          type="url"
+                          name="featuredImage"
+                          value={formData.featuredImage}
+                          onChange={handleChange}
+                          placeholder="https://exemple.com/image.jpg"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      {formData.featuredImage && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1">Aperçu :</p>
+                          <img
+                            src={formData.featuredImage}
+                            alt="Aperçu"
+                            className="h-24 w-24 object-cover rounded-lg border border-gray-200"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <div>

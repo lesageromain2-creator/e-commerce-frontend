@@ -1,31 +1,13 @@
 /**
  * Better Auth - Route API catch-all
- * Gère : sign-in, sign-up, sign-out, get-session, etc.
+ * DÉSACTIVÉ - Le projet utilise JWT pour l'authentification
  */
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "../../../lib/auth";
+import type { NextApiRequest, NextApiResponse } from "next";
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
-const handler = toNodeHandler(auth);
-
-export default async function authHandler(req: any, res: any) {
-  try {
-    return await handler(req, res);
-  } catch (error: any) {
-    const msg = error?.message || String(error);
-    console.error("[Better Auth] Error:", msg);
-    console.error("[Better Auth] Stack:", error?.stack);
-    if (error?.cause) console.error("[Better Auth] Cause:", error.cause);
-    if (!res.headersSent) {
-      res.status(500).json({
-        error: "Auth error",
-        message: msg,
-      });
-    }
-  }
+export default async function authHandler(req: NextApiRequest, res: NextApiResponse) {
+  // Renvoyer une réponse vide pour les appels Better Auth (désactivé)
+  return res.status(200).json({ 
+    session: null,
+    user: null 
+  });
 }

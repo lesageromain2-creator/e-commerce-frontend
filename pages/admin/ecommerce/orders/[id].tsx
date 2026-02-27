@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import Head from 'head';
+import Head from 'next/head';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 

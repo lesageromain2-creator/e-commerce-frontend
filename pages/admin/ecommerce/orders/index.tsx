@@ -9,6 +9,7 @@ import Link from 'next/link';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { ArrowLeft } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -149,6 +150,13 @@ export default function AdminOrdersPage() {
         <div className="container mx-auto px-4 py-8">
           {/* Header */}
           <div className="mb-8">
+            <Link
+              href="/admin/ecommerce/dashboard"
+              className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium mb-4 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Retour au dashboard
+            </Link>
             <h1 className="text-3xl font-bold text-gray-900">Commandes</h1>
             <p className="text-gray-600 mt-1">{pagination.total} commande(s) au total</p>
           </div>

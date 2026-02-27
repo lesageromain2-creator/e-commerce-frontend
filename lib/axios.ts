@@ -14,10 +14,11 @@ export const axiosInstance = axios.create({
   timeout: 30000, // 30 secondes
 });
 
-// Intercepteur pour ajouter le token JWT
+// Intercepteur pour ajouter le token JWT (token = clé utilisée à la connexion)
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('auth_token');
+    if (typeof window === 'undefined') return config;
+    const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,21 +29,19 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Intercepteur pour gérer les erreurs
+// Intercepteur pour gérer les erreurs (401 = token expiré ou invalide)
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Si erreur 401, déconnecter l'utilisateur
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('token');
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      
-      // Rediriger vers login si pas déjà sur cette page
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname + window.location.search);
       }
     }
-
     return Promise.reject(error);
   }
 );

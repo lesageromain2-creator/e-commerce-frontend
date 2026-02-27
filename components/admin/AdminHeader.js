@@ -1,9 +1,12 @@
-// frontend/components/admin/AdminHeader.js
+// frontend/components/admin/AdminHeader.js - EcamSap Admin
 import { useState, useEffect } from 'react';
-import { Search, Bell, User, ChevronDown } from 'lucide-react';
-import { adminSearch } from '../../utils/api';
+import { Search, Bell, User, ChevronDown, Settings, LogOut } from 'lucide-react';
+import { useRouter } from 'next/router';
+import { adminSearch, logout } from '../../utils/api';
+import { toast } from 'react-toastify';
 
 export default function AdminHeader({ user, onSearch }) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -43,6 +46,16 @@ export default function AdminHeader({ user, onSearch }) {
     return `${firstname?.charAt(0) || ''}${lastname?.charAt(0) || ''}`.toUpperCase();
   };
 
+  const handleLogout = async () => {
+    try {
+      toast.info('Déconnexion...');
+      await logout();
+    } catch (error) {
+      console.error('Erreur déconnexion:', error);
+      toast.error('Erreur lors de la déconnexion');
+    }
+  };
+
   return (
     <header className="admin-header">
       <div className="header-content">
@@ -50,7 +63,7 @@ export default function AdminHeader({ user, onSearch }) {
           <Search size={20} className="search-icon" />
           <input
             type="text"
-            placeholder="Rechercher projets, clients, messages..."
+            placeholder="Rechercher produits, commandes, clients..."
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="search-input"
@@ -123,16 +136,17 @@ export default function AdminHeader({ user, onSearch }) {
 
             {showProfileMenu && (
               <div className="profile-dropdown">
-                <div className="dropdown-item">
+                <div className="dropdown-item" onClick={() => router.push('/admin/profile')}>
                   <User size={16} />
                   <span>Mon profil</span>
                 </div>
-                <div className="dropdown-item">
+                <div className="dropdown-item" onClick={() => router.push('/admin/settings')}>
                   <Settings size={16} />
                   <span>Paramètres</span>
                 </div>
                 <div className="dropdown-divider"></div>
-                <div className="dropdown-item danger">
+                <div className="dropdown-item danger" onClick={handleLogout}>
+                  <LogOut size={16} />
                   <span>Déconnexion</span>
                 </div>
               </div>
@@ -182,7 +196,7 @@ export default function AdminHeader({ user, onSearch }) {
 
         .search-input:focus {
           outline: none;
-          border-color: #0066FF;
+          border-color: #C9A96E;
           background: rgba(255, 255, 255, 0.08);
         }
 
@@ -228,8 +242,8 @@ export default function AdminHeader({ user, onSearch }) {
 
         .result-type {
           padding: 4px 8px;
-          background: rgba(0, 102, 255, 0.2);
-          color: #00D9FF;
+          background: rgba(201, 169, 110, 0.2);
+          color: #C9A96E;
           border-radius: 6px;
           font-size: 11px;
           font-weight: 700;
@@ -365,13 +379,13 @@ export default function AdminHeader({ user, onSearch }) {
           width: 36px;
           height: 36px;
           border-radius: 10px;
-          background: linear-gradient(135deg, #0066FF, #00D9FF);
+          background: linear-gradient(135deg, #C9A96E, #8B7355);
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 700;
           font-size: 14px;
-          color: white;
+          color: #1A1A1A;
           flex-shrink: 0;
         }
 

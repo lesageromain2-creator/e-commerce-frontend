@@ -1,4 +1,4 @@
-/** @type {import('tailwindcss').Config} */
+/** @type {import('tailwindcss').Config} - Refined Versatility E-commerce */
 module.exports = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx,mdx}',
@@ -8,57 +8,66 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        /* Palette luxe - identité visuelle */
+        /* Refined Versatility - Vêtements vintage */
+        offwhite: '#FAFAF8',
+        charcoal: '#1A1A1A',
+        pearl: '#E8E8E5',
+        gold: '#B8986E',
+        sage: '#8A9A8B',
+        /* Aliases */
         primary: {
-          DEFAULT: '#C9A96E',
-          gold: '#C9A96E',
-          'gold-light': '#D4BC8E',
-          'gold-dark': '#A68A5C',
-          dark: '#1A1A1A',
+          DEFAULT: '#1A1A1A',
           light: '#FAFAF8',
+          mute: '#E8E8E5',
         },
-        luxury: {
-          gold: '#C9A96E',
-          dark: '#1A1A1A',
-          cream: '#FAFAF8',
-          taupe: '#8B8680',
-          'taupe-dark': '#5D5A56',
-          stone: '#E8E4DC',
-          burgundy: '#6B2C3E',
+        accent: {
+          gold: '#B8986E',
+          sage: '#8A9A8B',
         },
+        'primary-dark': '#1A1A1A',
+        'primary-gold': '#C9A96E',
+        'primary-gold-dark': '#A67C52',
       },
       fontFamily: {
-        heading: ['Cormorant Garamond', 'Playfair Display', 'Georgia', 'serif'],
-        body: ['Inter', 'Helvetica Neue', 'Arial', 'sans-serif'],
-        accent: ['Montserrat', 'Futura', 'sans-serif'],
-      },
-      fontSize: {
-        hero: ['clamp(3rem, 8vw, 6rem)', { lineHeight: '1.2' }],
-        'h1': ['clamp(2.5rem, 6vw, 4.5rem)', { lineHeight: '1.2' }],
-        'h2': ['clamp(2rem, 5vw, 3.5rem)', { lineHeight: '1.3' }],
-        'h3': ['clamp(1.75rem, 4vw, 2.5rem)', { lineHeight: '1.3' }],
+        heading: ['Playfair Display', 'Cormorant Garamond', 'Georgia', 'serif'],
+        body: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        accent: ['Cormorant Garamond', 'Georgia', 'serif'],
       },
       letterSpacing: {
-        'luxury': '0.1em',
-        'luxury-wide': '0.15em',
+        'luxury': '0.12em',
+        'luxury-wide': '0.2em',
+      },
+      fontSize: {
+        'h1': ['3rem', { lineHeight: '1.2', letterSpacing: '-0.02em' }],
+        'h2': ['2.25rem', { lineHeight: '1.3' }],
+        'h3': ['1.5rem', { lineHeight: '1.35' }],
+        'body': ['1rem', { lineHeight: '1.6' }],
+        'small': ['0.875rem', { lineHeight: '1.5' }],
+        'caption': ['0.75rem', { lineHeight: '1.4' }],
+      },
+      spacing: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+        '30': '7.5rem',
+        'screen-min': '80px',
+      },
+      maxWidth: {
+        'grid': '1400px',
+      },
+      borderRadius: {
+        'refined': '6px',
+        'capsule': '9999px',
       },
       boxShadow: {
-        'luxury': '0 4px 16px rgba(201, 169, 110, 0.2)',
-        'luxury-lg': '0 8px 32px rgba(201, 169, 110, 0.25)',
+        'refined': '0 2px 12px rgba(26, 26, 26, 0.06)',
+        'refined-hover': '0 8px 24px rgba(26, 26, 26, 0.08)',
+        'card': '0 1px 3px rgba(0,0,0,0.04)',
       },
-      animation: {
-        'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
-        'fade-in': 'fadeIn 0.6s ease-out forwards',
+      transitionDuration: {
+        'refined': '300ms',
       },
-      keyframes: {
-        fadeInUp: {
-          '0%': { opacity: '0', transform: 'translateY(30px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        fadeIn: {
-          '0%': { opacity: '0' },
-          '100%': { opacity: '1' },
-        },
+      aspectRatio: {
+        'product': '4 / 5',
       },
     },
   },

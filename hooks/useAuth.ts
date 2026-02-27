@@ -1,14 +1,11 @@
 // ============================================
 // HOOK AUTHENTIFICATION
 // ============================================
-// Gère : JWT (backend) + Better Auth (Google OAuth)
+// Gère uniquement JWT (backend) - Better Auth désactivé
 
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import { useRouter } from 'next/router';
 import axiosInstance from '@/lib/axios';
-import { supabase } from '@/lib/supabase';
-import { authClient } from '@/lib/auth-client';
-import { ensureBackendToken } from '@/utils/api';
 import type { 
   AuthState, 
   LoginCredentials, 
@@ -36,7 +33,7 @@ export const useAuth = () => {
 
 export const useAuthProvider = () => {
   const router = useRouter();
-  const { data: betterAuthSession } = authClient.useSession();
+  
   const [state, setState] = useState<AuthState>({
     user: null,
     token: null,
@@ -44,11 +41,12 @@ export const useAuthProvider = () => {
     isLoading: true,
   });
 
-  // Charger l'utilisateur : JWT (localStorage) OU Better Auth (Google OAuth)
+  // Charger / resynchroniser l'utilisateur depuis localStorage (à chaque changement de route pour prendre en compte une connexion faite sur la page login)
   useEffect(() => {
-    const loadUser = async () => {
+    const loadUser = () => {
       try {
-        const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
+        if (typeof window === 'undefined') return;
+        const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
         const userStr = localStorage.getItem('user');
 
         if (token && userStr) {
@@ -66,26 +64,6 @@ export const useAuthProvider = () => {
             isAuthenticated: true,
             isLoading: false,
           });
-        } else if (betterAuthSession?.user) {
-          const baUser = betterAuthSession.user;
-          const nameParts = (baUser.name ?? '').trim().split(/\s+/);
-          const first_name = nameParts[0] ?? '';
-          const last_name = nameParts.slice(1).join(' ') ?? '';
-          // Obtenir un JWT backend pour les API (réservations, chat, etc.)
-          await ensureBackendToken();
-          setState({
-            user: {
-              id: baUser.id,
-              email: baUser.email ?? '',
-              first_name,
-              last_name,
-              role: 'client',
-              is_verified: baUser.emailVerified ?? false,
-            },
-            token: localStorage.getItem('authToken') || 'better-auth',
-            isAuthenticated: true,
-            isLoading: false,
-          });
         } else {
           setState((prev) => ({ ...prev, isLoading: false }));
         }
@@ -96,35 +74,7 @@ export const useAuthProvider = () => {
     };
 
     loadUser();
-
-    // Écouter les changements de session Supabase (seulement si configuré)
-    let subscription: { unsubscribe: () => void } | null = null;
-    
-    if (supabase) {
-      const { data } = supabase.auth.onAuthStateChange(
-        async (event, session) => {
-          if (event === 'SIGNED_OUT') {
-            setState({
-              user: null,
-              token: null,
-              isAuthenticated: false,
-              isLoading: false,
-            });
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user');
-          }
-        }
-      );
-      subscription = data.subscription;
-    }
-
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
-      }
-    };
-  }, [betterAuthSession]);
+  }, [router.asPath]); // Resync après navigation (ex: retour depuis page login)
 
   const login = useCallback(async (credentials: LoginCredentials) => {
     try {
@@ -135,6 +85,7 @@ export const useAuthProvider = () => {
       if (response.data.success) {
         const { token, user } = response.data;
 
+        localStorage.setItem('token', token);
         localStorage.setItem('auth_token', token);
         localStorage.setItem('user', JSON.stringify(user));
 
@@ -146,7 +97,13 @@ export const useAuthProvider = () => {
         });
 
         toast.success('Connexion réussie !');
-        router.push('/dashboard');
+        
+        // Redirection selon le rôle
+        if (user.role === 'admin') {
+          router.push('/admin/ecommerce/dashboard');
+        } else {
+          router.push('/dashboard');
+        }
       }
     } catch (error: any) {
       console.error('Erreur login:', error);
@@ -176,30 +133,27 @@ export const useAuthProvider = () => {
   }, [router]);
 
   const logout = useCallback(async () => {
-    try {
-      await axiosInstance.post('/auth/logout');
-    } catch (error) {
-      console.error('Erreur logout:', error);
-    }
-    try {
-      await authClient.signOut();
-    } catch {
-      // Ignorer si pas de session Better Auth
-    } finally {
+    // Toujours déconnecter localement et rediriger, même si l'API renvoie 429 ou autre erreur
+    const clearAndRedirect = () => {
+      localStorage.removeItem('token');
       localStorage.removeItem('authToken');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');
-
       setState({
         user: null,
         token: null,
         isAuthenticated: false,
         isLoading: false,
       });
-
       toast.info('Déconnexion réussie');
       router.push('/');
+    };
+    try {
+      await axiosInstance.post('/auth/logout');
+    } catch (_error) {
+      // 429 (rate limit) ou autre : on ignore, la déco côté client est prioritaire
     }
+    clearAndRedirect();
   }, [router]);
 
   const updateUser = useCallback((user: UserAuth) => {

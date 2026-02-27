@@ -12,7 +12,7 @@ if (typeof window === 'undefined') {
 // GESTION DU TOKEN JWT
 // ============================================
 
-const TOKEN_KEY = 'authToken';
+const TOKEN_KEY = 'token';
 
 export const getToken = () => {
   if (typeof window === 'undefined') return null;
@@ -22,12 +22,15 @@ export const getToken = () => {
 const setToken = (token) => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TOKEN_KEY, token);
+  localStorage.setItem('auth_token', token); // pour Header, axios, etc.
   console.log('✅ Token sauvegardé');
 };
 
 const removeToken = () => {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('auth_token'); // Compatibilité
+  localStorage.removeItem('user');
   console.log('🗑️ Token supprimé');
 };
 
@@ -167,9 +170,10 @@ export const login = async (credentials) => {
     body: JSON.stringify(credentials),
   });
   
-  if (data.token) {
+  if (data.token && data.user) {
     setToken(data.token);
-    console.log('✅ Connexion réussie');
+    localStorage.setItem('user', JSON.stringify(data.user));
+    console.log('✅ Connexion réussie:', data.user.email);
   }
   
   return data;
@@ -201,6 +205,9 @@ export const logout = async () => {
   } finally {
     removeToken();
     console.log('✅ Déconnexion terminée');
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
   }
 };
 

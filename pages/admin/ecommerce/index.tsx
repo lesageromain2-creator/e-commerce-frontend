@@ -91,14 +91,14 @@ export default function AdminEcommerceDashboard() {
   };
 
   const getStatusColor = (status: string) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      processing: 'bg-blue-100 text-blue-800',
-      shipped: 'bg-purple-100 text-purple-800',
-      delivered: 'bg-green-100 text-green-800',
+    const colors: Record<string, string> = {
+      pending: 'bg-gold/15 text-gold',
+      processing: 'bg-charcoal/10 text-charcoal',
+      shipped: 'bg-sage/20 text-sage',
+      delivered: 'bg-sage/25 text-sage',
       cancelled: 'bg-red-100 text-red-800',
     };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[status] || 'bg-pearl text-charcoal';
   };
 
   const getPaymentStatusColor = (status: string) => {
@@ -113,8 +113,8 @@ export default function AdminEcommerceDashboard() {
 
   if (loading || !stats) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-offwhite flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -122,61 +122,57 @@ export default function AdminEcommerceDashboard() {
   return (
     <>
       <Head>
-        <title>Dashboard E-commerce | Admin</title>
+        <title>Dashboard E-commerce | Atelier Vintage Admin</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto px-4 py-8">
-          {/* Header */}
+      <div className="min-h-screen bg-offwhite">
+        <div className="max-w-grid mx-auto px-6 lg:px-20 py-8">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard E-commerce</h1>
-            <p className="text-gray-600 mt-2">Vue d'ensemble de votre boutique</p>
+            <h1 className="font-heading text-h1 text-charcoal">Dashboard E-commerce</h1>
+            <p className="text-charcoal/70 mt-2">Vue d'ensemble de votre boutique</p>
           </div>
 
-          {/* KPIs Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {/* Revenue */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-lg shadow-md p-6"
+              className="bg-offwhite border border-pearl rounded-refined shadow-refined p-6"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm text-gray-600">Chiffre d'affaires</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">
+                  <p className="text-small text-charcoal/70">Chiffre d'affaires</p>
+                  <p className="text-2xl font-bold text-charcoal mt-2">
                     {stats.totalRevenue.toLocaleString('fr-FR', {
                       style: 'currency',
                       currency: 'EUR',
                     })}
                   </p>
                 </div>
-                <div className="bg-green-100 p-3 rounded-lg">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-sage/20 p-3 rounded-refined">
+                  <svg className="w-6 h-6 text-sage" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
               </div>
-              <div className="mt-4 flex items-center text-sm">
-                <span className="text-green-600 font-medium">+{stats.revenueGrowth}%</span>
-                <span className="text-gray-500 ml-2">vs mois dernier</span>
+              <div className="mt-4 flex items-center text-small">
+                <span className="text-sage font-medium">+{stats.revenueGrowth}%</span>
+                <span className="text-charcoal/50 ml-2">vs mois dernier</span>
               </div>
             </motion.div>
 
-            {/* Orders */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white rounded-lg shadow-md p-6"
+              className="bg-offwhite border border-pearl rounded-refined shadow-refined p-6"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="text-sm text-gray-600">Commandes</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalOrders}</p>
+                  <p className="text-small text-charcoal/70">Commandes</p>
+                  <p className="text-2xl font-bold text-charcoal mt-2">{stats.totalOrders}</p>
                 </div>
-                <div className="bg-blue-100 p-3 rounded-lg">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gold/15 p-3 rounded-refined">
+                  <svg className="w-6 h-6 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                   </svg>
                 </div>
@@ -236,7 +232,7 @@ export default function AdminEcommerceDashboard() {
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <Link href="/admin/ecommerce/products/create">
-              <button className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+              <button type="button" className="w-full btn-primary flex items-center justify-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
@@ -244,19 +240,13 @@ export default function AdminEcommerceDashboard() {
               </button>
             </Link>
             <Link href="/admin/ecommerce/orders">
-              <button className="w-full bg-white border-2 border-gray-300 px-4 py-3 rounded-lg font-medium hover:border-gray-400 transition-all">
-                Voir les commandes
-              </button>
+              <button type="button" className="w-full btn-secondary">Voir les commandes</button>
             </Link>
             <Link href="/admin/ecommerce/products">
-              <button className="w-full bg-white border-2 border-gray-300 px-4 py-3 rounded-lg font-medium hover:border-gray-400 transition-all">
-                Gérer les produits
-              </button>
+              <button type="button" className="w-full btn-secondary">Gérer les produits</button>
             </Link>
             <Link href="/admin/ecommerce/settings">
-              <button className="w-full bg-white border-2 border-gray-300 px-4 py-3 rounded-lg font-medium hover:border-gray-400 transition-all">
-                Paramètres
-              </button>
+              <button type="button" className="w-full btn-secondary">Paramètres</button>
             </Link>
           </div>
 

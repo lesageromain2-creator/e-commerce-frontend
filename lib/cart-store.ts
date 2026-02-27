@@ -41,7 +41,11 @@ interface CartStore {
   getSubtotal: () => number;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const API_URL = typeof window !== 'undefined'
+  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000')
+  : 'http://localhost:5000';
+
+const API_TIMEOUT = 8000;
 
 export const useCartStore = create<CartStore>()(
   persist(
@@ -54,27 +58,52 @@ export const useCartStore = create<CartStore>()(
       // Ajouter un produit au panier
       addItem: async (newItem) => {
         set({ isLoading: true, error: null });
-        
+        const sessionId = get().sessionId || crypto.randomUUID();
+
+        const addLocally = () => {
+          const existing = get().items.find(
+            (item) =>
+              item.productId === newItem.productId &&
+              (item.variantId === newItem.variantId || (!item.variantId && !newItem.variantId))
+          );
+          if (existing) {
+            set({
+              items: get().items.map((item) =>
+                item.id === existing.id
+                  ? { ...item, quantity: Math.min(item.quantity + newItem.quantity, newItem.maxStock || 99) }
+                  : item
+              ),
+              isLoading: false,
+              error: null,
+            });
+          } else {
+            set({
+              items: [
+                ...get().items,
+                { ...newItem, id: crypto.randomUUID() },
+              ],
+              sessionId,
+              isLoading: false,
+              error: null,
+            });
+          }
+        };
+
         try {
-          const sessionId = get().sessionId || crypto.randomUUID();
-          
-          // Appel API
           const response = await axios.post(
             `${API_URL}/cart/items`,
             {
               productId: newItem.productId,
-              variantId: newItem.variantId,
+              variantId: newItem.variantId || undefined,
               quantity: newItem.quantity,
             },
             {
-              headers: {
-                'X-Session-Id': sessionId,
-              },
+              headers: { 'X-Session-Id': sessionId },
+              timeout: API_TIMEOUT,
             }
           );
 
-          // Mettre à jour le state avec la réponse du backend
-          if (response.data.success) {
+          if (response.data.success && response.data.cart?.items) {
             set({
               items: response.data.cart.items.map((item: any) => ({
                 id: item.id,
@@ -87,44 +116,26 @@ export const useCartStore = create<CartStore>()(
                 quantity: item.quantity,
                 image: item.images?.[0] || '',
                 slug: item.slug,
-                maxStock: item.variant_stock || item.stock_quantity,
+                maxStock: item.variant_stock ?? item.stock_quantity ?? 99,
               })),
-              sessionId: response.data.cart.sessionId,
+              sessionId: response.data.cart.sessionId ?? sessionId,
               isLoading: false,
-            });
-          }
-        } catch (error: any) {
-          console.error('Error adding to cart:', error);
-          set({
-            error: error.response?.data?.message || 'Erreur lors de l\'ajout au panier',
-            isLoading: false,
-          });
-          
-          // En cas d'erreur, ajout local uniquement
-          const existing = get().items.find(
-            (item) =>
-              item.productId === newItem.productId &&
-              item.variantId === newItem.variantId
-          );
-
-          if (existing) {
-            set({
-              items: get().items.map((item) =>
-                item.id === existing.id
-                  ? { ...item, quantity: item.quantity + newItem.quantity }
-                  : item
-              ),
+              error: null,
             });
           } else {
+            addLocally();
+          }
+        } catch (error: any) {
+          const isNetworkError = !error.response || error.message === 'Network Error' || error.code === 'ECONNABORTED';
+          if (isNetworkError) {
+            console.warn('Cart API unreachable, adding item locally:', error.message);
+            addLocally();
+          } else {
             set({
-              items: [
-                ...get().items,
-                {
-                  ...newItem,
-                  id: crypto.randomUUID(),
-                },
-              ],
+              error: error.response?.data?.message || 'Erreur lors de l\'ajout au panier',
+              isLoading: false,
             });
+            addLocally();
           }
         }
       },
@@ -243,13 +254,13 @@ export const useCartStore = create<CartStore>()(
         }
       },
 
-      // Synchroniser avec le backend
+      // Synchroniser avec le backend (échoue silencieusement si backend injoignable, ex. retour depuis Stripe)
       syncWithBackend: async () => {
         set({ isLoading: true, error: null });
-        
+
         try {
           const sessionId = get().sessionId;
-          
+
           if (!sessionId) {
             set({ isLoading: false });
             return;
@@ -259,6 +270,7 @@ export const useCartStore = create<CartStore>()(
             headers: {
               'X-Session-Id': sessionId,
             },
+            timeout: API_TIMEOUT,
           });
 
           if (response.data.success) {
@@ -278,13 +290,23 @@ export const useCartStore = create<CartStore>()(
               })),
               isLoading: false,
             });
+          } else {
+            set({ isLoading: false });
           }
         } catch (error: any) {
-          console.error('Error syncing cart:', error);
-          set({
-            error: error.response?.data?.message || 'Erreur lors de la synchronisation',
-            isLoading: false,
-          });
+          const isNetworkError =
+            !error.response &&
+            (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.message?.includes('Network Error'));
+
+          if (isNetworkError) {
+            // Backend injoignable : on garde le panier local, pas d'erreur affichée
+            set({ isLoading: false, error: null });
+          } else {
+            set({
+              error: error.response?.data?.message || 'Erreur lors de la synchronisation',
+              isLoading: false,
+            });
+          }
         }
       },
 
@@ -323,9 +345,9 @@ export const useCartStore = create<CartStore>()(
 export function useCart() {
   const store = useCartStore();
 
-  // Synchroniser au montage
+  // Synchroniser au montage (ne pas faire remonter d'erreur si le backend est injoignable)
   React.useEffect(() => {
-    store.syncWithBackend();
+    store.syncWithBackend().catch(() => {});
   }, []);
 
   return store;

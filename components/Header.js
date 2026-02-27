@@ -33,7 +33,7 @@ export default function Header({ settings = {} }) {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('authToken') || localStorage.getItem('auth_token');
     const hasBetterAuth = !!betterAuthSession?.user;
     setIsLoggedIn(!!token || hasBetterAuth);
 
@@ -63,6 +63,7 @@ export default function Header({ settings = {} }) {
 
   const handleLogout = async () => {
     if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
       localStorage.removeItem('authToken');
       localStorage.removeItem('auth_token');
       localStorage.removeItem('user');

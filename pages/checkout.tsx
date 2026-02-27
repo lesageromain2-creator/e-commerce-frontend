@@ -1,19 +1,18 @@
 /**
- * Page Checkout E-commerce avec Stripe Elements
+ * Page Checkout E-commerce
+ * Formulaire adresse puis redirection vers la page de paiement Stripe (hébergée par Stripe, personnalisable dans le Dashboard).
  * /checkout
  */
 
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useCartStore } from '@/lib/cart-store';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { z } from 'zod';
+import { EcommerceLayout } from '@/components/ecommerce';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
 // Schema de validation
@@ -28,70 +27,12 @@ const addressSchema = z.object({
   email: z.string().email('Email invalide'),
 });
 
-function CheckoutForm({ clientSecret }: { clientSecret: string }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const router = useRouter();
-  const { items, clearCart, getSubtotal } = useCartStore();
-
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/order/success`,
-      },
-    });
-
-    if (error) {
-      setMessage(error.message || 'Une erreur est survenue');
-      toast.error(error.message);
-    } else {
-      // La redirection se fera automatiquement vers return_url
-    }
-
-    setLoading(false);
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <PaymentElement />
-      
-      <button
-        type="submit"
-        disabled={!stripe || loading}
-        className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-      >
-        {loading ? 'Traitement...' : `Payer ${getSubtotal().toFixed(2)}€`}
-      </button>
-
-      {message && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          {message}
-        </div>
-      )}
-    </form>
-  );
-}
-
 export default function CheckoutPage() {
   const router = useRouter();
-  const { items, getSubtotal, getItemCount } = useCartStore();
+  const { items, getSubtotal } = useCartStore();
 
-  const [step, setStep] = useState<'address' | 'payment'>('address');
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-  const [orderId, setOrderId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   const [billingAddress, setBillingAddress] = useState({
     firstName: '',
@@ -136,7 +77,6 @@ export default function CheckoutPage() {
     setLoading(true);
 
     try {
-      // Créer la commande
       const orderData = {
         items: items.map((item) => ({
           productId: item.productId,
@@ -154,26 +94,24 @@ export default function CheckoutPage() {
       }
 
       const order = orderResponse.data.order;
-      setOrderId(order.id);
+      setRedirecting(true);
 
-      // Créer PaymentIntent
-      const paymentResponse = await axios.post(`${API_URL}/payments/order-intent`, {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      const stripeResponse = await axios.post(`${API_URL}/stripe/create-checkout-from-order`, {
         orderId: order.id,
-        orderNumber: order.orderNumber,
-        amount: parseFloat(order.totalAmount),
-        customerEmail: billingAddress.email,
-        customerName: `${billingAddress.firstName} ${billingAddress.lastName}`,
+        successUrl: `${origin}/order/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancelUrl: `${origin}/checkout`,
       });
 
-      if (paymentResponse.data.success) {
-        setClientSecret(paymentResponse.data.clientSecret);
-        setStep('payment');
-      } else {
-        throw new Error('Erreur lors de la création du paiement');
+      if (stripeResponse.data.success && stripeResponse.data.url) {
+        window.location.href = stripeResponse.data.url;
+        return;
       }
+      throw new Error('Impossible d\'ouvrir la page de paiement');
     } catch (error: any) {
-      console.error('Error creating order:', error);
+      console.error('Error creating order or checkout session:', error);
       toast.error(error.response?.data?.message || 'Erreur lors de la commande');
+      setRedirecting(false);
     } finally {
       setLoading(false);
     }
@@ -191,42 +129,17 @@ export default function CheckoutPage() {
   return (
     <>
       <Head>
-        <title>Paiement | VotreShop</title>
+        <title>Paiement | Atelier Vintage</title>
       </Head>
 
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-8">
-          <div className="container mx-auto px-4">
-            <h1 className="text-3xl md:text-4xl font-bold">Finaliser la commande</h1>
-          </div>
-        </div>
+      <EcommerceLayout>
+        <div className="max-w-grid mx-auto px-6 lg:px-20 py-12">
+          <h1 className="font-heading text-h1 text-charcoal mb-10">Finaliser la commande</h1>
 
-        <div className="container mx-auto px-4 py-8">
-          {/* Progress Bar */}
-          <div className="mb-8">
-            <div className="flex items-center justify-center gap-4">
-              <div className={`flex items-center ${step === 'address' ? 'text-blue-600' : 'text-green-600'}`}>
-                <div className="w-8 h-8 rounded-full bg-current text-white flex items-center justify-center font-bold text-sm">
-                  {step === 'address' ? '1' : '✓'}
-                </div>
-                <span className="ml-2 font-medium">Adresse</span>
-              </div>
-              <div className="w-16 h-1 bg-gray-300"></div>
-              <div className={`flex items-center ${step === 'payment' ? 'text-blue-600' : 'text-gray-400'}`}>
-                <div className="w-8 h-8 rounded-full bg-current text-white flex items-center justify-center font-bold text-sm">
-                  2
-                </div>
-                <span className="ml-2 font-medium">Paiement</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Formulaire */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
             <div className="lg:col-span-2">
-              {step === 'address' ? (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-2xl font-bold mb-6">Informations de livraison</h2>
+              <div className="border border-pearl rounded-refined bg-offwhite p-6 lg:p-8">
+                <h2 className="font-heading text-h2 text-charcoal mb-6">Informations de livraison</h2>
 
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -238,7 +151,7 @@ export default function CheckoutPage() {
                           onChange={(e) =>
                             setBillingAddress({ ...billingAddress, firstName: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                         />
                       </div>
                       <div>
@@ -249,7 +162,7 @@ export default function CheckoutPage() {
                           onChange={(e) =>
                             setBillingAddress({ ...billingAddress, lastName: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                         />
                       </div>
                     </div>
@@ -263,7 +176,7 @@ export default function CheckoutPage() {
                           onChange={(e) =>
                             setBillingAddress({ ...billingAddress, email: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                         />
                       </div>
                       <div>
@@ -274,7 +187,7 @@ export default function CheckoutPage() {
                           onChange={(e) =>
                             setBillingAddress({ ...billingAddress, phone: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                         />
                       </div>
                     </div>
@@ -287,7 +200,7 @@ export default function CheckoutPage() {
                         onChange={(e) =>
                           setBillingAddress({ ...billingAddress, addressLine1: e.target.value })
                         }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                       />
                     </div>
 
@@ -299,7 +212,7 @@ export default function CheckoutPage() {
                         onChange={(e) =>
                           setBillingAddress({ ...billingAddress, addressLine2: e.target.value })
                         }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                       />
                     </div>
 
@@ -312,7 +225,7 @@ export default function CheckoutPage() {
                           onChange={(e) =>
                             setBillingAddress({ ...billingAddress, postalCode: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -323,7 +236,7 @@ export default function CheckoutPage() {
                           onChange={(e) =>
                             setBillingAddress({ ...billingAddress, city: e.target.value })
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                         />
                       </div>
                     </div>
@@ -335,7 +248,7 @@ export default function CheckoutPage() {
                         onChange={(e) =>
                           setBillingAddress({ ...billingAddress, country: e.target.value })
                         }
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-4 py-2.5 border border-pearl rounded-refined bg-offwhite focus:outline-none focus:ring-1 focus:ring-gold focus:border-gold text-charcoal"
                       >
                         <option value="FR">France</option>
                         <option value="BE">Belgique</option>
@@ -346,83 +259,48 @@ export default function CheckoutPage() {
                   </div>
 
                   <button
+                    type="button"
                     onClick={handleCreateOrder}
-                    disabled={loading}
-                    className="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 transition-all"
+                    disabled={loading || redirecting}
+                    className="w-full mt-6 btn-primary disabled:opacity-50"
                   >
-                    {loading ? 'Création...' : 'Continuer vers le paiement'}
+                    {redirecting
+                      ? 'Redirection vers le paiement sécurisé...'
+                      : loading
+                        ? 'Création de la commande...'
+                        : 'Continuer vers le paiement (Stripe)'}
                   </button>
                 </div>
-              ) : (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <h2 className="text-2xl font-bold mb-6">Paiement sécurisé</h2>
-                  {clientSecret && (
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
-                      <CheckoutForm clientSecret={clientSecret} />
-                    </Elements>
-                  )}
-                </div>
-              )}
             </div>
 
-            {/* Résumé */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-                <h2 className="text-xl font-bold mb-4">Récapitulatif</h2>
-
+              <div className="border border-pearl rounded-refined bg-pearl/20 p-6 sticky top-24">
+                <h2 className="font-heading text-h2 text-charcoal mb-4">Récapitulatif</h2>
                 <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-3">
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-16 h-16 object-cover rounded"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{item.name}</h4>
-                        {item.variantName && (
-                          <p className="text-xs text-gray-500">{item.variantName}</p>
-                        )}
-                        <p className="text-sm">
-                          {item.quantity} x {item.price.toFixed(2)}€
-                        </p>
+                      <img src={item.image} alt={item.name} className="w-16 h-16 object-cover rounded-refined" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-small text-charcoal">{item.name}</h4>
+                        {item.variantName && <p className="text-caption text-charcoal/60">{item.variantName}</p>}
+                        <p className="text-small">{item.quantity} × {item.price.toFixed(2)} €</p>
                       </div>
                     </div>
                   ))}
                 </div>
-
-                <div className="border-t pt-4 space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span>Sous-total</span>
-                    <span className="font-medium">{subtotal.toFixed(2)}€</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Livraison</span>
-                    <span className="font-medium">
-                      {shipping === 0 ? (
-                        <span className="text-green-600">Gratuite</span>
-                      ) : (
-                        `${shipping.toFixed(2)}€`
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>TVA</span>
-                    <span className="font-medium">{tax.toFixed(2)}€</span>
-                  </div>
+                <div className="border-t border-pearl pt-4 space-y-2 text-small">
+                  <div className="flex justify-between"><span className="text-charcoal/70">Sous-total</span><span>{subtotal.toFixed(2)} €</span></div>
+                  <div className="flex justify-between"><span className="text-charcoal/70">Livraison</span><span>{shipping === 0 ? <span className="text-sage">Gratuite</span> : `${shipping.toFixed(2)} €`}</span></div>
+                  <div className="flex justify-between"><span className="text-charcoal/70">TVA</span><span>{tax.toFixed(2)} €</span></div>
                 </div>
-
-                <div className="border-t pt-4 mt-4">
-                  <div className="flex justify-between text-xl font-bold">
-                    <span>Total</span>
-                    <span>{total.toFixed(2)}€</span>
-                  </div>
+                <div className="border-t border-pearl pt-4 mt-4 flex justify-between font-semibold text-lg text-charcoal">
+                  <span>Total</span><span>{total.toFixed(2)} €</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </EcommerceLayout>
     </>
   );
 }

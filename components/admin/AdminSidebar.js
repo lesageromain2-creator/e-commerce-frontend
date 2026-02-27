@@ -2,36 +2,44 @@
 import { useRouter } from 'next/router';
 import { 
   LayoutDashboard, 
-  FolderOpen, 
-  Calendar, 
-  MessageSquare, 
-  MessagesSquare,
+  Package, 
+  ShoppingCart, 
+  Warehouse, 
+  DollarSign, 
+  BarChart3,
   Users, 
-  LogOut,
-  Bed,
-  UtensilsCrossed
+  Calendar,
+  MessageSquare,
+  Tag,
+  Star,
+  FileText,
+  Settings,
+  LogOut
 } from 'lucide-react';
 
 export default function AdminSidebar({ activeSection, onNavigate, notifications = {} }) {
   const router = useRouter();
 
   const menuItems = [
-    { id: 'overview', label: 'Vue d\'ensemble', icon: LayoutDashboard, path: '/admin' },
-    { id: 'reservations', label: 'Réservations', icon: Calendar, path: '/admin/reservations', badge: notifications.reservations },
-    { id: 'chat', label: 'Chat clients', icon: MessagesSquare, path: '/admin/chat', badge: notifications.chat },
-    { id: 'users', label: 'Utilisateurs', icon: Users, path: '/admin/users' },
-    { id: 'rooms', label: 'Chambres', icon: Bed, path: '/admin/rooms' },
-    { id: 'menus', label: 'Menus gastronomiques', icon: UtensilsCrossed, path: '/admin/menus' },
-    { id: 'messages', label: 'Contact', icon: MessageSquare, path: '/admin/messages', badge: notifications.messages },
-    { id: 'clients', label: 'Clients', icon: Users, path: '/admin/clients', badge: notifications.clients },
-    { id: 'projects', label: 'Projets', icon: FolderOpen, path: '/admin/projects', badge: notifications.projects },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/ecommerce/dashboard' },
+    { id: 'products', label: 'Produits', icon: Package, path: '/admin/ecommerce/products' },
+    { id: 'orders', label: 'Commandes', icon: ShoppingCart, path: '/admin/ecommerce/orders', badge: notifications.orders },
+    { id: 'inventory', label: 'Inventaire', icon: Warehouse, path: '/admin/inventory' },
+    { id: 'finances', label: 'Finances', icon: DollarSign, path: '/admin/finances' },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/admin/analytics' },
+    { id: 'customers', label: 'Clients', icon: Users, path: '/admin/customers' },
+    { id: 'appointments', label: 'Rendez-vous', icon: Calendar, path: '/admin/appointments', badge: notifications.appointments },
+    { id: 'support', label: 'Support', icon: MessageSquare, path: '/admin/support', badge: notifications.support },
+    { id: 'marketing', label: 'Marketing', icon: Tag, path: '/admin/marketing' },
+    { id: 'reviews', label: 'Avis', icon: Star, path: '/admin/reviews', badge: notifications.reviews },
+    { id: 'content', label: 'Contenu', icon: FileText, path: '/admin/content' },
+    { id: 'settings', label: 'Paramètres', icon: Settings, path: '/admin/settings' },
   ];
 
   const handleLogout = async () => {
     try {
       const { logout } = await import('../../utils/api');
       await logout();
-      router.push('/login');
     } catch (error) {
       console.error('Erreur déconnexion:', error);
     }
@@ -41,8 +49,8 @@ export default function AdminSidebar({ activeSection, onNavigate, notifications 
     <aside className="admin-sidebar">
       <div className="sidebar-header">
         <div className="logo">
-          <span className="logo-icon">H</span>
-          <span className="logo-text">Admin Hôtel</span>
+          <span className="logo-icon">E</span>
+          <span className="logo-text">EcamSap Admin</span>
         </div>
         <span className="admin-badge">Admin</span>
       </div>
