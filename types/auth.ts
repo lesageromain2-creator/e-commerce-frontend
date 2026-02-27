@@ -27,10 +27,15 @@ export interface AuthResponse {
 export interface UserAuth {
   id: UUID;
   email: string;
-  first_name: string;
-  last_name: string;
+  // Nom/prénom peuvent venir sous différentes formes selon les endpoints
+  first_name?: string;
+  last_name?: string;
+  firstname?: string;
+  lastname?: string;
+  name?: string;
+  avatar_url?: string;
   role: 'admin' | 'client' | 'user';
-  is_verified: boolean;
+  is_verified?: boolean;
 }
 
 export interface PasswordResetRequest {
