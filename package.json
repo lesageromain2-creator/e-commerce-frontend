@@ -13,6 +13,7 @@
   "dependencies": {
     "@stripe/react-stripe-js": "^2.7.0",
     "@stripe/stripe-js": "^3.3.0",
+    "@supabase/supabase-js": "^2.50.1",
     "animejs": "^4.3.5",
     "axios": "^1.6.8",
     "better-auth": "^1.4.18",
